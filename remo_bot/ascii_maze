@@ -1,0 +1,166 @@
+#!/bin/bash
+
+#initialize variables
+read -p "enter maze width between 5-37"$'\n' MAZE_WIDTH
+while [[ "$MAZE_WIDTH" -lt 5 || "$MAZE_WIDTH" -gt 70 ]]; do
+  read -p "maze width must be between 5-70"$'\n' MAZE_WIDTH
+done
+if (($MAZE_WIDTH % 2 == 0)); then
+  MAZE_WIDTH=$((MAZE_WIDTH + 1))
+fi
+read -p "enter maze height between 5-21"$'\n' MAZE_HEIGHT
+while [[ "$MAZE_HEIGHT" -lt 5 || "$MAZE_HEIGHT" -gt 55 ]]; do
+  read -p "maze height must be between 5-55"$'\n' MAZE_HEIGHT
+done
+if (($MAZE_HEIGHT % 2 == 0)); then
+  MAZE_HEIGHT=$((MAZE_HEIGHT + 1))
+fi
+
+if [[ $MAZE_WIDTH -gt 37 || $MAZE_HEIGHT -gt 21 ]]; then
+  printf '\e[8;60;146t'
+fi
+MAZE_WIDTH=$((MAZE_WIDTH + 2))
+MAZE_HEIGHT=$((MAZE_HEIGHT + 2))
+WHITE=$(tput setab 231)
+NORMAL=$(tput sgr0)
+RED=$(tput setaf 9)
+
+# Initialize the maze array.
+function init_maze {
+  for ((y=0; y<MAZE_HEIGHT; y++)) ; do
+    for ((x=1; x<$((MAZE_WIDTH-1)); x++)) ; do
+      maze[$((y * MAZE_WIDTH + x))]=0
+    done
+    maze[$((y * MAZE_WIDTH + 0))]=1
+    maze[$((y * MAZE_WIDTH + (MAZE_WIDTH - 1)))]=1
+  done
+  for ((x=0; x<MAZE_WIDTH; x++)) ; do
+    maze[$x]=1
+    maze[$(((MAZE_HEIGHT - 1) * MAZE_WIDTH + x))]=1
+  done
+  rand=$(( $RANDOM % (MAZE_WIDTH-4) + 2))
+  if (($rand % 2 == 1)); then
+    rand=$((rand + 1))
+  fi
+  carve_maze $((2 * MAZE_WIDTH + rand))
+  maze[$((MAZE_WIDTH + rand))]=1
+  rando=$(( $RANDOM % (MAZE_WIDTH-4) + 3))
+  if (($rando % 2 == 0)); then
+    rando=$((rand + 1))
+  fi
+  maze[$(((MAZE_HEIGHT - 2) * MAZE_WIDTH + MAZE_WIDTH - rando))]=2
+  tput civis
+  print_maze
+  echo "enter direction using w,a,s,d"
+  prev=$(((MAZE_HEIGHT - 2) * MAZE_WIDTH + MAZE_WIDTH - rando))
+  tput cup $((prev/MAZE_WIDTH)) $(((prev - (prev/MAZE_WIDTH) * MAZE_WIDTH)*2 ))
+}
+
+# Display the maze array.
+function print_maze {
+  local map=""
+  for ((y=0; y<MAZE_HEIGHT; y++)) ; do
+    for ((x = 0; x < MAZE_WIDTH; x++ )) ; do
+      if [[ maze[$((y * MAZE_WIDTH + x))] -eq 3 || (maze[$((y * MAZE_WIDTH + x))] -eq 0 && (x -eq 1 || x -eq $((MAZE_WIDTH-2)) || y -eq 1 || y -eq $((MAZE_HEIGHT-2)))) ]]; then
+        map+="${WHITE}  ${NORMAL}"
+      elif [[ maze[$((y * MAZE_WIDTH + x))] -eq 2 ]]; then
+        map+="${RED}@@${NORMAL}"
+      else
+        map+="  "
+      fi
+    done
+    map+="\n"
+  done
+  clear
+  echo -en "$map"
+}
+
+# Carve the maze starting at the specified offset.
+function carve_maze {
+  local index=$1
+  local dir=$RANDOM
+  local i=0
+  maze[$index]=1
+  while [ $i -le 4 ] ; do
+    local offset=0
+    case $((dir % 4)) in
+      0) offset=1 ;;
+      1) offset=-1 ;;
+      2) offset=$MAZE_WIDTH ;;
+      3) offset=$((-$MAZE_WIDTH)) ;;
+    esac
+    local index2=$((index + offset))
+    if [[ maze[$index2] -eq 0 ]] ; then
+      local nindex=$((index2 + offset))
+      if [[ maze[$nindex] -eq 0 ]] ; then
+        maze[$index2]=1
+        carve_maze $nindex
+        i=0
+        dir=$RANDOM
+        index=$nindex
+      fi
+    fi
+    i=$((i + 1))
+    dir=$((dir + 1))
+  done
+}
+
+function move {
+  offset=0
+  case $var in
+    w) offset=$((-$MAZE_WIDTH)) ;;
+    a) offset=-1 ;;
+    s) offset=$MAZE_WIDTH ;;
+    d) offset=1 ;;
+    q) tput cup $((MAZE_HEIGHT+1)) 0
+       echo "exiting"
+       tput cnorm
+       exit ;;
+  esac
+  if (( maze[$((prev+offset))] == 0 || maze[$((prev+offset))] == 3 || $((prev+offset))>$(((MAZE_HEIGHT-1)*MAZE_WIDTH)) )); then
+    return
+  fi
+  echo -en "  ${LEFT}"
+  case $offset in
+    -1) echo -en "${LEFT}" ;;
+    1) echo -en "${RIGHT}" ;;
+    $MAZE_WIDTH) echo -en "${DOWN}" ;;
+    $((-$MAZE_WIDTH))) echo -en "${UP}" ;;
+  esac
+  echo -en "${RED}@@${NORMAL}${LEFT}"
+  maze[$prev]=1
+  prev=$((prev + offset))
+  maze[$prev]=2
+  echo -en "${LEFT}${UP}"
+  for ((y=-1; y<=1; y++)) ; do
+    for ((x=-MAZE_WIDTH; x<=MAZE_WIDTH; x+=MAZE_WIDTH)) ; do
+      if (($((prev+y+x)) > 0 && $((prev+y+x)) < $((MAZE_HEIGHT*MAZE_WIDTH-1)))); then
+        if ((maze[$((prev+y+x))] == 0)); then
+          maze[$((prev+y+x))]=3
+          echo -en "${WHITE}  ${NORMAL}${LEFT}"
+        fi
+      fi
+      echo -en "${DOWN}"
+    done
+    echo -en "${UP}${UP}${UP}${RIGHT}"
+  done
+  echo -en "${LEFT}${LEFT}${DOWN}"
+}
+
+# main
+stty -echo
+UP=$(tput cuu 1)
+DOWN=$(tput cud 1)
+LEFT=$(tput cub 2)
+RIGHT=$(tput cuf 2)
+rand=""
+prev=""
+init_maze
+while (( maze[$((MAZE_WIDTH + rand))] != 2)); do
+  read -sn 1 var
+  move
+done
+tput cup $((MAZE_HEIGHT+1)) 0
+tput cnorm
+echo "You won!"
+stty echo

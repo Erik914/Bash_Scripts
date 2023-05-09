@@ -1,0 +1,213 @@
+#!/bin/bash
+#make bombs counter work by adding flags.
+
+
+trap "exit" INT TERM
+trap "sleep 1;kill 0" EXIT
+
+#If there is enough continuous 0 tiles the program will fail. 99*60 is biggest possible.
+ulimit -s 65532
+
+read -p "enter grid width between 2-99"$'\n' GRID_WIDTH
+while [[ "$GRID_WIDTH" -lt 2 || "$GRID_WIDTH" -gt 99 ]]; do
+  read -p "grid width must be between 2-99"$'\n' GRID_WIDTH
+done
+
+read -p "enter grid height between 2-55"$'\n' GRID_HEIGHT
+while [[ "$GRID_HEIGHT" -lt 2 || "$GRID_HEIGHT" -gt 56 ]]; do
+  read -p "grid height must be between 2-55"$'\n' GRID_HEIGHT
+done
+
+if [[ $((GRID_WIDTH*GRID_HEIGHT)) -lt 5000 ]]; then
+  read -p "enter number of bombs 1-"$((GRID_WIDTH*GRID_HEIGHT-1))$'\n' bombs
+  while [[ "$bombs" -lt 1 || "$bombs" -gt $((GRID_WIDTH*GRID_HEIGHT-1)) ]]; do
+    read -p "number of bombs must be between 1 to "$((GRID_WIDTH*GRID_HEIGHT-1))$'\n' bombs
+  done
+else
+  read -p "enter number of bombs "$((GRID_WIDTH*GRID_HEIGHT/20))"-"$((GRID_WIDTH*GRID_HEIGHT-1))$'\n' bombs
+  while [[ "$bombs" -lt $((GRID_WIDTH*GRID_HEIGHT/20)) || "$bombs" -gt $((GRID_WIDTH*GRID_HEIGHT-1)) ]]; do
+    read -p "number of bombs must be between "$((GRID_WIDTH*GRID_HEIGHT/20))" to "$((GRID_WIDTH*GRID_HEIGHT-1))$'\n' bombs
+  done
+fi
+
+if [[ $GRID_WIDTH -gt 37 || $GRID_HEIGHT -gt 39 ]]; then
+  printf '\e[9;1t'
+fi
+
+grid=()
+covered=()
+
+lost=0
+
+# Initialize the grid array.
+function init_grid {
+  for ((y=0; y<GRID_HEIGHT; y++)) ; do
+    for ((x=0; x<GRID_WIDTH; x++)) ; do
+      grid[$((y * GRID_WIDTH + x))]=0
+      covered[$((y * GRID_WIDTH + x))]=1
+    done
+  done
+}
+
+# Display the grid array.
+function print_grid {
+  local foo=$(printf "%03d" $bombs)
+  local map="bombs: $foo\n"
+  for ((y=0; y<$((GRID_HEIGHT+2)); y++)); do
+    for ((x = 0; x <$((GRID_WIDTH+2)); x++ )); do
+      if [[ $x -eq 0 && $y -eq 0 ]]; then
+        map+="   "
+        continue
+      fi
+      if [[ $y -eq $((GRID_HEIGHT+1)) ]]; then
+        map+="‾‾"
+        continue
+      fi
+      if [[ $x -eq $((GRID_WIDTH+1)) ]]; then
+        map+="| "
+        continue
+      fi
+      if [[ $y -eq 0 ]]; then
+        map+="$x"
+        if [[ $x -lt 10 ]]; then
+          map+=" "
+        fi
+        continue
+      fi
+      if [[ $x -eq 0 ]]; then
+        if [[ $y -lt 10 ]]; then
+          map+="$y |"
+        else
+          map+="$y|"
+        fi
+        continue
+      fi
+      if [[ covered[$(((y-1) * GRID_WIDTH + x - 1))] -eq 1 ]]; then
+        map+="■ "
+      elif [[ grid[$(((y-1) * GRID_WIDTH + x - 1))] -eq 0 ]]; then
+        map+="  "
+      elif [[ grid[$(((y-1) * GRID_WIDTH + x - 1))] -lt 10 ]] ; then
+        map+="$((grid[$(((y-1) * GRID_WIDTH + x - 1))]))"
+        map+=" "
+      else
+        map+="${RED}* ${NORMAL}"
+      fi
+    done
+    map+="\n"
+  done
+  clear
+  echo -en "$map"
+}
+
+# Add bombs and numbers.
+function grid_numbers {
+  for ((i=0; i<bombs; i++)); do
+    local x_pos=$(( RANDOM % GRID_WIDTH))
+    local y_pos=$(( RANDOM % GRID_HEIGHT))
+    while [[ grid[$((y_pos * GRID_WIDTH + x_pos))] -gt 9 ]]; do
+      x_pos=$(( RANDOM % GRID_WIDTH))
+      y_pos=$(( RANDOM % GRID_HEIGHT))
+    done
+    grid[$((y_pos * GRID_WIDTH + x_pos))]=10
+    for ((x=1; x> -2; x--)); do
+      for ((y=1; y> -2; y--)); do
+        if [[ $((y_pos + y)) -lt 0 || $((y_pos + y)) -gt $((GRID_HEIGHT-1)) || $((x_pos+x)) -lt 0 || $((x_pos + x)) -gt $((GRID_WIDTH-1)) ]]; then
+          continue
+        fi
+        grid[$(((y_pos+y)*GRID_WIDTH+x_pos+x))]=$((grid[$(((y_pos+y)*GRID_WIDTH+x_pos+x))] +1))
+      done
+    done
+  done
+}
+
+#uncover tile and if zero call uncover function.
+function zero_reveal {
+  if [[ covered[$(($2 * GRID_WIDTH + $1))] -eq 1 ]]; then
+    if [[ grid[$(($2 * GRID_WIDTH + $1))] -eq 0 ]]; then
+      uncover $1 $2
+    else
+      covered[$(($2 * GRID_WIDTH + $1))]=0
+    fi
+  fi
+}
+
+#uncover tiles and if zero uncover nearby tiles.
+function uncover {
+  local x_pos=$1
+  local y_pos=$2
+  covered[$((y_pos * GRID_WIDTH + x_pos))]=0
+
+  if [[ grid[$((y_pos * GRID_WIDTH + x_pos))] -gt 9 ]]; then
+    for ((y=0; y<GRID_HEIGHT; y++)) ; do
+      for ((x=0; x<GRID_WIDTH; x++)) ; do
+        if [[ grid[$((y * GRID_WIDTH + x))] -gt 9 ]]; then
+          covered[$((y * GRID_WIDTH + x))]=0
+        fi
+      done
+    done
+    lost=1
+  fi
+
+  if [[ grid[$((y_pos * GRID_WIDTH + x_pos))] -eq 0 ]]; then
+    if [[ $((x_pos+1)) -lt $GRID_WIDTH ]]; then
+      zero_reveal $((x_pos+1)) $y_pos
+    fi
+    if [[ $((y_pos+1)) -lt $GRID_HEIGHT ]]; then
+      zero_reveal $x_pos $((y_pos+1))
+    fi
+    if [[ $y_pos -gt 0 ]]; then
+      zero_reveal $x_pos $((y_pos-1))
+    fi
+    if [[ $x_pos -gt 0 ]]; then
+      zero_reveal $((x_pos-1)) $y_pos
+    fi
+  fi
+}
+
+# Set time in corner
+function clock {
+  for ((i=0;i<1000;i++)); do
+    foo=$(printf "%03d" $i)
+    tput sc
+    tput cup 0 $((2*GRID_WIDTH-5))
+    echo -n "time: $foo"
+    tput rc
+    sleep 1
+  done
+}
+
+# Generate and display a grid.
+stty -echo
+RED=$(tput setaf 9)
+NORMAL=$(tput sgr0)
+init_grid
+grid_numbers
+print_grid
+clock &
+tot=9999
+while (( tot > bombs )); do
+  stty echo
+  echo -n "$foo"
+  temp=$IFS ;IFS=, ;read -p "enter cordinates. example: 1,1"$'\n' x_cord y_cord ;IFS=$temp
+  stty -echo
+  if(($x_cord=="q")); then
+    lost=1
+    echo "exiting"
+    break
+  fi
+  uncover $((x_cord-1)) $((y_cord-1))
+  print_grid
+  if(($lost==1)); then
+    echo "You lost!"
+    break
+  fi
+  tot=0
+  for i in ${covered[@]}; do
+    let tot+=$i
+  done
+done
+if(($lost==0)); then
+  echo "You won!"
+fi
+
+stty echo

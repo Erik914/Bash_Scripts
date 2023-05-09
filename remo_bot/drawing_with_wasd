@@ -1,0 +1,97 @@
+#!/bin/bash
+
+HEIGHT=20
+WIDTH=50
+
+file="$(dirname "$0")/colors.txt"
+read -a arr <"$file"
+
+BLACK=$(tput setab 0)
+DARK_RED=$(tput setab 1)
+DARK_GREEN=$(tput setab 2)
+DARK_YELLOW=$(tput setab 3)
+DARK_BLUE=$(tput setab 4)
+MAGENTA=$(tput setab 5)
+CYAN=$(tput setab 6)
+GREY=$(tput setab 7)
+DARK_GREY=$(tput setab 8)
+RED=$(tput setab 9)
+GREEN=$(tput setab 10)
+YELLOW=$(tput setab 11)
+BLUE=$(tput setab 12)
+FUCHSIA=$(tput setab 13)
+LIGHT_BLUE=$(tput setab 14)
+LIGHT_GREY=$(tput setab 15)
+WHITE=$(tput setab 231)
+NORMAL=$(tput sgr0)
+
+function draw_picture {
+  local picture=""
+  for ((y=0; y<HEIGHT; y++)) ; do
+    for ((x=0; x<WIDTH; x++)) ; do
+      before=${arr[$((y * WIDTH + x))]}
+      picture+="${!before} ${NORMAL}"
+    done
+    picture+="\n"
+  done
+  clear
+  echo -en "$picture"
+}
+
+draw_picture
+stty -echo
+INPUT=""
+COLOR="WHITE"
+UP=$(tput cuu 1)
+DOWN=$(tput cud 1)
+LEFT=$(tput cub 1)
+RIGHT=$(tput cuf 1)
+X_POS=1
+Y_POS=$HEIGHT
+echo -en "${UP}"
+while [ 1==1 ]; do
+
+  IFS= read -n 1 INPUT
+  case "$INPUT" in
+  w) if (( $Y_POS!=1 )); then
+       Y_POS=$((Y_POS-1))
+       echo -en "${UP}"
+     fi ;;
+  a) if (( $X_POS!=1 )); then
+       X_POS=$((X_POS-1))
+       echo -en "${LEFT}"
+     fi ;;
+  s) if (( $Y_POS!=$HEIGHT )); then
+       Y_POS=$((Y_POS+1))
+       echo -en "${DOWN}"
+     fi ;;
+  d) if (( $X_POS!=$WIDTH )); then
+       X_POS=$((X_POS+1))
+       echo -en "${RIGHT}"
+     fi ;;
+  .|" ") arr[$(((Y_POS-1) * WIDTH + (X_POS-1)))]=$COLOR
+         echo -en "${!COLOR} ${NORMAL}${LEFT}"
+         echo "${arr[@]}" > "$file" ;;
+  1) COLOR="BLACK" ;;
+  2) COLOR="DARK_RED" ;;
+  3) COLOR="DARK_GREEN" ;;
+  4) COLOR="DARK_YELLOW" ;;
+  5) COLOR="DARK_BLUE" ;;
+  6) COLOR="MAGENTA" ;;
+  7) COLOR="CYAN" ;;
+  8) COLOR="GREY" ;;
+  9) COLOR="DARK_GREY" ;;
+  z) COLOR="RED" ;;
+  x) COLOR="GREEN" ;;
+  c) COLOR="YELLOW" ;;
+  v) COLOR="BLUE" ;;
+  b) COLOR="FUCHSIA" ;;
+  n) COLOR="LIGHT_BLUE" ;;
+  m) COLOR="LIGHT_GREY" ;;
+  l) COLOR="WHITE" ;;
+  q) break ;;
+  esac
+done
+tput cup $HEIGHT 0
+echo "exiting"
+stty echo
