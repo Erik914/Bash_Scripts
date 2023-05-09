@@ -1,0 +1,9 @@
+#!/bin/bash
+
+osascript << EOF
+tell application "System Preferences"
+activate
+set current pane to pane id "com.apple.preference.universalaccess"
+get the name of every anchor of current pane
+end tell
+EOF

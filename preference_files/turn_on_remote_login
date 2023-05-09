@@ -1,0 +1,34 @@
+#!/bin/bash
+
+access=$( defaults read .GlobalPreferences | grep "AppleKeyboardUIMode" | tail -c 3 | head -c 1 )
+
+system_open=$( pgrep "System Preferences" )
+
+if [[ $access -eq 1 ]]; then
+osascript -e 'tell application "System Events" to key code 98 using {control down}'
+fi
+
+if [[ $system_open -ne 0 ]]; then
+osascript -e 'quit application "System Preferences"'
+fi
+
+osascript << EOF
+activate application "System Preferences"
+tell application "System Preferences"
+   reveal pane id "com.apple.preferences.sharing"
+end tell
+delay 0.4
+tell application "System Events" to tell process "System Preferences" to repeat 4 times
+    keystroke tab
+    delay 0.01
+end repeat
+tell application "System Events" to tell process "System Preferences" to repeat 8 times
+    key code 126
+end repeat
+tell application "System Events" to tell process "System Preferences" to repeat 3 times
+    key code 125
+end repeat
+delay 0.05
+tell application "System Events" to tell process "System Preferences" to keystroke " "
+quit application "System Preferences"
+EOF

@@ -1,0 +1,71 @@
+#!/bin/bash
+
+mouse_keys_on=$( defaults read com.apple.universalaccess | grep "mouseDriver = " | tail -c 3 | head -c 1 )
+
+lock_trackpad=$( defaults read com.apple.universalaccess | grep "mouseDriverIgnoreTrackpad = " | tail -c 3 | head -c 1 )
+
+access=$( defaults read .GlobalPreferences | grep "AppleKeyboardUIMode" | tail -c 3 | head -c 1 )
+
+system_open=$( pgrep "System Preferences" )
+
+if [[ $system_open -ne 0 ]]; then
+osascript -e 'quit application "System Preferences"'
+fi
+
+if [[ $access -eq 1 ]]; then
+osascript -e 'tell application "System Events" to key code 98 using {control down}'
+fi
+
+osascript << EOF
+activate application "System Preferences"
+tell application "System Preferences"
+   reveal anchor "Mouse" of pane id "com.apple.preference.universalaccess"
+end tell
+delay 0.3
+tell application "System Events" to tell process "System Preferences" to repeat 2 times
+    keystroke tab 
+    delay 0.01
+end repeat
+EOF
+
+if [[ $mouse_keys_on -eq 0 ]]; then
+osascript -e 'tell application "System Events" to tell process "System Preferences" to keystroke space'
+fi
+
+osascript << EOF
+tell application "System Events" to tell process "System Preferences" to keystroke tab 
+    delay 0.01
+tell application "System Events" to tell process "System Preferences" to keystroke space
+EOF
+
+if [[ $lock_trackpad -eq 0 ]]; then
+osascript << EOF
+tell application "System Events" to tell process "System Preferences" to keystroke tab 
+    delay 0.001
+tell application "System Events" to tell process "System Preferences" to keystroke space
+EOF
+fi
+
+osascript << EOF
+tell application "System Events" to tell process "System Preferences" to keystroke tab 
+    delay 0.001
+tell application "System Events" to tell process "System Preferences" to repeat 4 times
+    key code 124
+    delay 0.001
+end repeat
+tell application "System Events" to tell process "System Preferences" to keystroke tab 
+    delay 0.001
+tell application "System Events" to tell process "System Preferences" to repeat 10 times
+    key code 123
+    delay 0.001
+end repeat
+tell application "System Events" to tell process "System Preferences" to repeat 2 times
+    keystroke tab 
+    delay 0.001
+end repeat
+tell application "System Events" to tell process "System Preferences" to keystroke space
+EOF
+
+osascript -e 'tell application "System Events" to key code 98 using {control down}'
+sleep 0.3
+osascript -e 'quit application "System Preferences"'
