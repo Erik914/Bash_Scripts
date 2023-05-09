@@ -1,0 +1,14 @@
+#!/bin/bash
+
+for((i=0;i<=15;i++)); do
+  echo "$(tput setab $i)$i$(tput sgr0)"
+done
+for((i=0;i<6;i++)); do
+  for((j=16;j<52;j++)); do
+    echo -n "$(tput setab $((i*36+j)))$((i*36+j))$(tput sgr0)"
+  done
+  echo
+done
+for((i=232;i<=255;i++)); do
+  echo "$(tput setab $i)$i$(tput sgr0)"
+done

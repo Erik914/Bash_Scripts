@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "enter how many fibonacci numbers you want"
+read number
+echo -e "\n\n"
+
+prev=1
+num=1
+echo -e "$prev\n"
+
+for ((i=1;i<$number;i++)); do
+  temp=$num
+  num=$(BC_LINE_LENGTH=9999 bc -l <<< "$num + $prev")
+  prev=$temp
+  echo -e "$prev\n"
+done

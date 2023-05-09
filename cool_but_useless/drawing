@@ -1,0 +1,51 @@
+#!/bin/bash
+
+HEIGHT=20
+WIDTH=50
+
+BLACK=$(tput setab 0)
+DARK_RED=$(tput setab 1)
+DARK_GREEN=$(tput setab 2)
+DARK_YELLOW=$(tput setab 3)
+DARK_BLUE=$(tput setab 4)
+MAGENTA=$(tput setab 5)
+CYAN=$(tput setab 6)
+GREY=$(tput setab 7)
+DARK_GREY=$(tput setab 8)
+RED=$(tput setab 9)
+GREEN=$(tput setab 10)
+YELLOW=$(tput setab 11)
+BLUE=$(tput setab 12)
+FUCHSIA=$(tput setab 13)
+LIGHT_BLUE=$(tput setab 14)
+LIGHT_GREY=$(tput setab 15)
+WHITE=$(tput setab 231)
+NORMAL=$(tput sgr0)
+
+for((i=0;i<$((HEIGHT * WIDTH));i++)); do
+  arr[$i]="WHITE"
+done
+
+function draw_picture {
+  picture=""
+  for ((y=0; y<HEIGHT; y++)) ; do
+    for ((x=0; x<WIDTH; x++)) ; do
+      before=${arr[$((y * WIDTH + x))]}
+      picture+="${!before} ${NORMAL}"
+    done
+    picture+="\n"
+  done
+}
+
+while [ 1==1 ]; do
+  
+  draw_picture
+  echo -en "$picture"
+  echo "enter a color"
+  read COLOR
+  COLOR=$(echo "$COLOR" | awk '{print toupper($0)}')
+  echo "enter cordinates. example: 1,1"
+  temp=$IFS ;IFS=, ;read x_cord y_cord ;IFS=$temp
+  arr[$(((y_cord-1) * WIDTH + (x_cord-1)))]=$COLOR
+
+done

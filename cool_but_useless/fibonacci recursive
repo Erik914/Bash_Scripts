@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo "enter how many fibonacci numbers you want"
+read number
+echo -e "\n\n"
+
+fib () {
+  (($1<2)) && echo $1 || echo $(($(fib $(($1-1)))+$(fib $(($1-2)))));
+}
+
+for ((i=1;i<=$number;i++)); do
+  fib $i
+done
