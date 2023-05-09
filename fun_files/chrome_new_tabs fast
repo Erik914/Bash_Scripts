@@ -1,0 +1,11 @@
+#!/bin/bash
+
+osascript << EOF
+activate application "Google Chrome"
+ 
+tell application "System Events" to repeat 100 times
+ 
+ keystroke "t" using {command down}
+ 
+end repeat
+EOF

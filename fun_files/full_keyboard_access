@@ -1,0 +1,7 @@
+#!/bin/bash
+
+access=$( defaults read .GlobalPreferences | grep "AppleKeyboardUIMode" | tail -c 3 | head -c 1 )
+
+if [[ $access -eq 1 ]]; then
+osascript -e 'tell application "System Events" to key code 98 using {control down}'
+fi

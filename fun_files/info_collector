@@ -1,0 +1,9 @@
+#!/bin/bash
+
+var=$( /usr/sbin/system_profiler SPStorageDataType | grep -A 1 "Available: " )
+var=$var$( /usr/sbin/system_profiler SPBluetoothDataType | grep -B 1 "Address: " )
+var=$var$( /usr/sbin/system_profiler SPSoftwareDataType | grep -E -e "System Version: " -e "Computer Name: " -e "User Name: " )
+var=$var$( ifconfig | grep -A 1 "en0" )
+
+#printf "%s" "$var" > file.txt
+echo "$var"

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+osascript << EOF
+tell application "System Events" to repeat 50 times
+    key code 145
+end repeat
+EOF

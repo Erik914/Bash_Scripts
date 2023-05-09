@@ -1,0 +1,32 @@
+#!/bin/bash
+
+fn_on=$( defaults read .GlobalPreferences.plist | grep "com.apple.keyboard.fnState" | tail -c 3 | head -c 1 )
+
+system_open=$( pgrep "System Preferences" )
+
+if [[ $system_open -ne 0 ]]; then
+osascript -e 'quit application "System Preferences"'
+osascript -e 'activate "System Preferences"'
+fi
+
+if [[ $fn_on -eq 0 ]]; then
+osascript << EOF
+tell application "System Preferences"
+    reveal anchor "keyboardTab" of pane "com.apple.preference.keyboard"
+end tell
+delay 0.4
+tell application "System Events" to tell process "System Preferences"
+    click checkbox 1 of tab group 1 of window 1
+end tell
+EOF
+fi
+
+if [[ $system_open -eq 0 ]]; then
+osascript -e 'quit application "System Preferences"'
+fi
+
+osascript << EOF
+tell application "System Events" to repeat 50 times
+    key code 145
+end repeat
+EOF

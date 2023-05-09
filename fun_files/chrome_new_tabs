@@ -1,0 +1,15 @@
+#!/bin/bash
+
+osascript << EOF
+activate application "Google Chrome"
+ 
+tell application "System Events" to repeat 100 times
+ 
+ tell process "Google Chrome"
+ 
+ click menu item "New Tab" of menu 1 of menu bar item "File" of menu bar 1
+ 
+ end tell
+ 
+end repeat
+EOF

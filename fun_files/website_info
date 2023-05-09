@@ -1,0 +1,21 @@
+#!/bin/bash
+
+echo "enter website names seperated by a space"
+echo "example: test.com example.com"
+read websites
+
+for site in $websites
+do
+  ip=$(host $site | grep 'has add' | head -1 | awk '{ print $4}')
+
+  [ "$ip" == "" ] && { echo "Error: An error occurred!"; continue; }
+
+  echo -e "\033[93mGetting information about domain: $d [ $ip ] \033[0m"
+
+  whois "$ip" | egrep -w 'OrgName:|City:|Country:|OriginAS:|NetRange:'
+
+  [ "$?" == "0" ] || whois "$ip" | egrep -w 'org-name:|address:';
+
+  echo ""
+wait
+done
