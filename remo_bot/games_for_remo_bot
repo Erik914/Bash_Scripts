@@ -1,0 +1,24 @@
+#!/bin/bash
+#add snake game
+#try to make a procedurally generated dungeon game
+
+ulimit -s 65532
+
+while [ 1==1 ]; do
+  echo "Enter the number of the game you want to play"
+  echo "1) maze"
+  echo "2) minesweeper"
+  echo "3) drawing"
+  read GAME
+  while [[ $GAME -lt 1 || $GAME -gt 3 ]]; do
+    read -p "possible numbers are only 1-3"$'\n' GAME
+  done
+  case $GAME in
+    1) (source "$(dirname "$0")/ascii_maze") ;;
+    2) (source "$(dirname "$0")/minesweeper") ;;
+    3) (source "$(dirname "$0")/drawing_with_wasd") ;;
+  esac
+stty -echo
+sleep 3
+stty echo
+done
